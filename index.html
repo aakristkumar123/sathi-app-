@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sathi — Memory Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===================== LANDING ===================== -->
+<div id="landing">
+  <div class="brand">Sathi</div>
+  <div class="brand-sub">A memory companion for elders and the families caring for them.</div>
+  <div class="path-choice">
+    <button class="path-tile patient" onclick="goPatient()">
+      <span class="icon">🌼</span>
+      <h2>I am the patient</h2>
+      <p>Reminders and games made just for you.</p>
+    </button>
+    <button class="path-tile caretaker" onclick="goCaretaker()">
+      <span class="icon">🗂️</span>
+      <h2>I am the caretaker</h2>
+      <p>Set up routines, photos, and see progress.</p>
+    </button>
+  </div>
+</div>
+
+<!-- ===================== PATIENT VIEW ===================== -->
+<div id="patientView" class="hidden">
+
+  <button class="back-link hidden" id="backLink" onclick="showPatientHome()">← Back</button>
+
+  <div id="patientHomeScreen">
+    <div class="patient-topbar">
+      <div class="name" id="patientGreeting">Namaste 🙏</div>
+      <button class="exit-link" onclick="goLanding()">Exit</button>
+    </div>
+    <div class="patient-home">
+      <button class="big-tile reminder-dot" id="reminderTile" onclick="showPatientHome()">
+        <span class="emoji">⏰</span>
+        <div>
+          <div class="label">Reminders</div>
+          <div class="sub">Medicine, food & routine</div>
+        </div>
+      </button>
+      <button class="big-tile" onclick="startPhotoGame()">
+        <span class="emoji">🖼️</span>
+        <div>
+          <div class="label">Yaadon ka Khel</div>
+          <div class="sub">Photo memory game</div>
+        </div>
+      </button>
+      <button class="big-tile" onclick="startRoutineGame()">
+        <span class="emoji">❓</span>
+        <div>
+          <div class="label">Roz ka Sawal</div>
+          <div class="sub">Daily routine questions</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <div id="photoGameScreen" class="game-screen hidden"></div>
+  <div id="routineGameScreen" class="game-screen hidden"></div>
+</div>
+
+<div id="reminderAlert" class="hidden">
+  <div class="icon">💊</div>
+  <h1 id="reminderTitle">Dawai lene ka samay</h1>
+  <p id="reminderText"></p>
+  <button class="done-btn" id="reminderListenBtn" style="margin-bottom:16px;" onclick="replayReminder()">🔊 Suno</button>
+  <button class="done-btn" onclick="dismissReminder()">Ho gaya ✓</button>
+</div>
+
+<!-- ===================== CARETAKER VIEW ===================== -->
+<div id="caretakerView" class="hidden">
+  <div class="sidebar">
+    <div class="brand">Sathi</div>
+    <button class="nav-item active" data-page="profile" onclick="showCaretakerPage('profile')">Patient Profile</button>
+    <button class="nav-item" data-page="reminders" onclick="showCaretakerPage('reminders')">Medicines & Reminders</button>
+    <button class="nav-item" data-page="photos" onclick="showCaretakerPage('photos')">Family Photos</button>
+    <button class="nav-item" data-page="health" onclick="showCaretakerPage('health')">Health Records</button>
+    <button class="nav-item" data-page="scores" onclick="showCaretakerPage('scores')">Game Scores</button>
+    <button class="exit-link" style="margin-top:24px;text-align:left;" onclick="goLanding()">Exit</button>
+  </div>
+  <div class="content" id="caretakerContent"></div>
+</div>
+
+<script src="js/script.js"></script>
+</body>
+</html>
