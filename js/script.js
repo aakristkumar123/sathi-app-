@@ -6,6 +6,7 @@ function loadDB(){
   const raw = localStorage.getItem(DB_KEY);
   if(raw) return JSON.parse(raw);
   const fresh = {
+    settings:{ language:'hi' }, // 'en' | 'hi' | 'brx' (Bodo) - patient's chosen voice/text language
     patient:{ name:'Ramesh Sharma', age:72, wake:'06:00', sleep:'21:30', meals:'Chai 7am, Nashta 8am, Khana 1pm, Raat ka khana 8pm' },
     medicines:[
       {name:'Donepezil', dosage:'5mg', time:'09:00'},
@@ -25,6 +26,150 @@ function loadDB(){
 }
 function saveDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 let db = loadDB();
+if(!db.settings) db.settings = { language:'hi' }; // safety net for data saved before this feature existed
+
+/* ============================================================
+   LANGUAGE / TRANSLATIONS
+   Supports English, Hindi, and Bodo (a Tibeto-Burman language
+   spoken widely in Assam) so the patient can pick the language
+   they're most comfortable hearing and reading.
+
+   IMPORTANT - READ BEFORE YOUR DEMO:
+   The Bodo ("brx") lines marked with a [VERIFY] comment are our
+   best-effort placeholders, not confirmed by a native speaker.
+   "khulumbai" (formal greeting) is confirmed correct. Please get
+   the [VERIFY] lines checked/corrected by a Bodo speaker on your
+   team before presenting - wrong translations shown on stage would
+   hurt more than skipping the language would.
+============================================================ */
+const TRANSLATIONS = {
+  en: {
+    greeting: 'Namaste',
+    reminders_label: 'Reminders',
+    reminders_sub: 'Medicine, food & routine',
+    photo_game_label: 'Memory Photos',
+    photo_game_sub: 'Photo memory game',
+    routine_game_label: 'Daily Questions',
+    routine_game_sub: 'Daily routine questions',
+    exit: 'Exit',
+    next_question: 'Next Question →',
+    correct_msg: 'Well done! ✅',
+    wrong_msg_prefix: 'That\'s okay, the correct answer was: ',
+    reminder_done: 'Done ✓',
+    reminder_listen: '🔊 Listen',
+    no_photos_msg: 'No photos yet. Ask your caretaker to add some.',
+    q_who_is_beside: 'Who is standing beside you in this photo?',
+    q_when_was_this: 'When was this photo taken?',
+    q_wake_time: 'What time do you wake up in the morning?',
+    q_sleep_time: 'What time do you go to sleep at night?',
+    q_medicine_time: (med)=>`What time do you take ${med}?`,
+    q_family_name: (relation)=>`What is the name of your ${relation}?`
+  },
+  hi: {
+    greeting: 'Namaste',
+    reminders_label: 'Reminders',
+    reminders_sub: 'Dawai, khana aur routine',
+    photo_game_label: 'Yaadon ka Khel',
+    photo_game_sub: 'Photo memory game',
+    routine_game_label: 'Roz ka Sawal',
+    routine_game_sub: 'Daily routine questions',
+    exit: 'Exit',
+    next_question: 'Agla Sawal →',
+    correct_msg: 'Bahut badhiya! ✅',
+    wrong_msg_prefix: 'Koi baat nahi, sahi jawab tha: ',
+    reminder_done: 'Ho gaya ✓',
+    reminder_listen: '🔊 Suno',
+    no_photos_msg: 'Abhi koi photo nahi hai. Caretaker ko photo upload karne ke liye kahiye.',
+    q_who_is_beside: 'Is photo mein aapke bagal mein kaun khada hai?',
+    q_when_was_this: 'Yeh photo kab ki hai?',
+    q_wake_time: 'Aap subah kitne baje uthte hain?',
+    q_sleep_time: 'Aap raat ko kitne baje sote hain?',
+    q_medicine_time: (med)=>`${med} kis samay leni hoti hai?`,
+    q_family_name: (relation)=>`${relation} ka naam kya hai?`
+  },
+  brx: {
+    greeting: 'Khulumbai', // confirmed: formal Bodo greeting, like "Namaste"
+    reminders_label: 'Reminders', // [VERIFY] kept in English - please add Bodo word for "reminder"
+    reminders_sub: 'Dawai, khana aru routine', // [VERIFY] mixed Bodo/Hindi placeholder
+    photo_game_label: 'Fwithai Khel', // [VERIFY] attempted "photo game" - please confirm wording
+    photo_game_sub: 'Photo memory game', // [VERIFY]
+    routine_game_label: 'Gaskhrai Sawal', // [VERIFY] attempted "daily question" - please confirm
+    routine_game_sub: 'Daily routine questions', // [VERIFY]
+    exit: 'Doraikhi', // [VERIFY] attempted "exit/leave" - please confirm
+    next_question: 'Fwrni Sawal →', // [VERIFY]
+    correct_msg: 'Mwjang! ✅', // [VERIFY] "mwjang" = good/nice (confirmed word), full phrase not verified
+    wrong_msg_prefix: 'Jinga dasi, sonnaithi jwbab: ', // [VERIFY] "jinga dasi" = don't worry (confirmed phrase), rest not verified
+    reminder_done: 'Jaboti ✓', // [VERIFY]
+    reminder_listen: '🔊 Nagw', // [VERIFY] attempted "listen" - please confirm
+    no_photos_msg: 'Fwithai jaya. Caretaker nw fwithai upload khalamnanwiubthi.', // [VERIFY]
+    q_who_is_beside: 'Be fwithai o nwngni gwrjwm o sw dungwn?', // [VERIFY] full sentence not confirmed
+    q_when_was_this: 'Be fwithai bosor de?', // [VERIFY] full sentence not confirmed
+    q_wake_time: 'Nwng subah maha be uthinai?', // [VERIFY] full sentence not confirmed
+    q_sleep_time: 'Nwng habha maha be uninai?', // [VERIFY] full sentence not confirmed
+    q_medicine_time: (med)=>`${med} maha be jagwn?`, // [VERIFY] full sentence not confirmed
+    q_family_name: (relation)=>`Nwngni ${relation} bimwng mwn se?` // [VERIFY] full sentence not confirmed
+  }
+};
+
+function t(key){
+  const lang = db.settings.language || 'hi';
+  return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.en[key] || key;
+}
+
+// Maps our internal language code to the BCP-47 tag the browser's speech
+// engine expects, and tells us honestly whether a voice actually exists
+// for it on this device - browsers currently do NOT ship Bodo voices,
+// so we never pretend to speak it if no matching voice is found.
+function getSpeechLangCode(){
+  const lang = db.settings.language || 'hi';
+  if(lang === 'en') return 'en-IN';
+  if(lang === 'brx') return 'brx-IN';
+  return 'hi-IN';
+}
+function deviceHasVoiceFor(langCode){
+  const voices = cachedVoices.length ? cachedVoices : (window.speechSynthesis ? window.speechSynthesis.getVoices() : []);
+  return voices.some(v => v.lang === langCode || (v.lang && v.lang.startsWith(langCode.split('-')[0])));
+}
+
+function setLanguage(lang){
+  db.settings.language = lang;
+  saveDB(db);
+  applyPatientTranslations();
+  speak(t('greeting'), getSpeechLangCode());
+  updateVoiceAvailabilityNote();
+}
+
+// Be honest with the user: most phones/browsers do not currently ship a
+// Bodo (or other Tibeto-Burman) voice, so we tell them plainly instead of
+// silently failing to speak.
+function updateVoiceAvailabilityNote(){
+  const note = document.getElementById('voiceNote');
+  if(!note) return;
+  if(!deviceHasVoiceFor(getSpeechLangCode())){
+    note.textContent = 'Is device par is bhasha ki awaaz uplabdh nahi hai — sirf likha hua text dikhega.';
+    note.classList.remove('hidden');
+  } else {
+    note.classList.add('hidden');
+  }
+}
+
+// Updates all the static patient-facing text to the currently selected language.
+function applyPatientTranslations(){
+  const first = (db.patient.name||'').split(' ')[0];
+  const g = document.getElementById('patientGreeting');
+  if(g) g.textContent = t('greeting') + (first ? ', ' + first : '') + ' 🙏';
+  const map = {
+    lbl_reminders:'reminders_label', sub_reminders:'reminders_sub',
+    lbl_photogame:'photo_game_label', sub_photogame:'photo_game_sub',
+    lbl_routinegame:'routine_game_label', sub_routinegame:'routine_game_sub',
+    txt_exit:'exit'
+  };
+  Object.keys(map).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = t(map[id]);
+  });
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===(db.settings.language||'hi')));
+}
 
 /* ============================================================
    TEXT TO SPEECH
@@ -75,9 +220,10 @@ function goPatient(){
   document.getElementById('landing').classList.add('hidden');
   document.getElementById('patientView').classList.remove('hidden');
   document.getElementById('caretakerView').classList.add('hidden');
-  document.getElementById('patientGreeting').textContent = 'Namaste, ' + db.patient.name.split(' ')[0] + ' 🙏';
+  applyPatientTranslations();
   showPatientHome();
-  speak('Namaste ' + db.patient.name.split(' ')[0]);
+  speak(t('greeting') + ' ' + db.patient.name.split(' ')[0], getSpeechLangCode());
+  updateVoiceAvailabilityNote();
   startReminderWatcher();
 }
 function goCaretaker(){
@@ -121,14 +267,16 @@ function triggerReminder(icon, title, text){
   document.querySelector('#reminderAlert .icon').textContent = icon;
   document.getElementById('reminderTitle').textContent = title;
   document.getElementById('reminderText').textContent = text;
+  document.getElementById('reminderListenBtn').textContent = t('reminder_listen');
+  document.getElementById('reminderDoneBtn').textContent = t('reminder_done');
   document.getElementById('reminderAlert').classList.remove('hidden');
   lastReminderSpeech = title + '. ' + text;
   // Attempt auto-speak (works on desktop; on many phones this timer-triggered
-  // call gets silently blocked, which is why the visible "🔊 Suno" button below
+  // call gets silently blocked, which is why the visible "Listen" button below
   // exists — tapping it always works since it's a direct user gesture).
-  speak(lastReminderSpeech);
+  speak(lastReminderSpeech, getSpeechLangCode());
 }
-function replayReminder(){ speak(lastReminderSpeech); }
+function replayReminder(){ speak(lastReminderSpeech, getSpeechLangCode()); }
 function dismissReminder(){
   document.getElementById('reminderAlert').classList.add('hidden');
   window.speechSynthesis.cancel();
@@ -156,7 +304,7 @@ function startPhotoGame(){
     screen.innerHTML = `
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
         <span style="font-size:3rem;">📷</span>
-        <p class="empty-note">Abhi koi photo nahi hai. Caretaker ko photo upload karne ke liye kahiye.</p>
+        <p class="empty-note">${t('no_photos_msg')}</p>
       </div>`;
     return;
   }
@@ -169,7 +317,7 @@ function nextPhotoQuestion(){
 
   if(qTypeIsWho){
     const person = photo.people[Math.floor(Math.random()*photo.people.length)];
-    question = 'Is photo mein aapke bagal mein kaun khada hai?';
+    question = t('q_who_is_beside');
     correctAnswer = person.name + ' (' + person.relation + ')';
     const distractors = db.familyMembers
       .filter(f=>f.name !== person.name)
@@ -178,7 +326,7 @@ function nextPhotoQuestion(){
       .slice(0,3);
     options = [correctAnswer, ...distractors].sort(()=>0.5-Math.random());
   } else {
-    question = 'Yeh photo kab ki hai?';
+    question = t('q_when_was_this');
     correctAnswer = photo.occasion;
     const distractors = db.photos
       .filter(p=>p.occasion !== photo.occasion)
@@ -197,7 +345,7 @@ function renderGameQuestion(screenId, imgUrl, question, options, correctAnswer, 
     ${imgUrl ? `<img class="game-photo" src="${imgUrl}" alt="memory photo">` : ''}
     <div class="game-question">
       <span>${question}</span>
-      <button class="speak-btn" onclick="speak('${question.replace(/'/g,"\\'")}')">🔊</button>
+      <button class="speak-btn" onclick="speak('${question.replace(/'/g,"\\'")}', getSpeechLangCode())">🔊</button>
     </div>
     <div class="options-grid" id="optionsGrid"></div>
     <div class="feedback-msg" id="feedbackMsg"></div>
@@ -210,7 +358,7 @@ function renderGameQuestion(screenId, imgUrl, question, options, correctAnswer, 
     btn.onclick = ()=> handleAnswer(btn, opt, correctAnswer, gameType);
     grid.appendChild(btn);
   });
-  speak(question);
+  speak(question, getSpeechLangCode());
 }
 function handleAnswer(btn, chosen, correctAnswer, gameType){
   const allBtns = document.querySelectorAll('#optionsGrid .option-btn');
@@ -221,8 +369,8 @@ function handleAnswer(btn, chosen, correctAnswer, gameType){
     allBtns.forEach(b=>{ if(b.textContent===correctAnswer) b.classList.add('correct'); });
   }
   const msg = document.getElementById('feedbackMsg');
-  msg.innerHTML = isCorrect ? 'Bahut badhiya! ✅' : 'Koi baat nahi, sahi jawab tha: '+correctAnswer;
-  speak(isCorrect ? 'Bahut badhiya' : 'Koi baat nahi. Sahi jawab tha '+correctAnswer);
+  msg.innerHTML = isCorrect ? t('correct_msg') : t('wrong_msg_prefix')+correctAnswer;
+  speak(isCorrect ? t('correct_msg') : t('wrong_msg_prefix')+correctAnswer, getSpeechLangCode());
 
   recordScore(gameType, isCorrect);
 
@@ -234,7 +382,7 @@ function handleAnswer(btn, chosen, correctAnswer, gameType){
   nextBtn.style.marginTop = '18px';
   nextBtn.style.background = 'var(--gold)';
   nextBtn.style.color = 'var(--forest-dark)';
-  nextBtn.textContent = 'Agla Sawal →';
+  nextBtn.textContent = t('next_question');
   nextBtn.onclick = ()=>{
     if(gameType==='photo') nextPhotoQuestion();
     else nextRoutineQuestion();
@@ -267,28 +415,28 @@ function nextRoutineQuestion(){
   const p = db.patient;
   const pool = [
     {
-      q:'Aap subah kitne baje uthte hain?',
+      q: t('q_wake_time'),
       correct: p.wake,
-      distractors: ['05:00','07:30','10:00'].filter(t=>t!==p.wake)
+      distractors: ['05:00','07:30','10:00'].filter(tm=>tm!==p.wake)
     },
     {
-      q:'Aap raat ko kitne baje sote hain?',
+      q: t('q_sleep_time'),
       correct: p.sleep,
-      distractors: ['19:00','22:30','23:00'].filter(t=>t!==p.sleep)
+      distractors: ['19:00','22:30','23:00'].filter(tm=>tm!==p.sleep)
     }
   ];
   if(db.medicines.length>0){
     const med = db.medicines[Math.floor(Math.random()*db.medicines.length)];
     pool.push({
-      q: med.name+' kis samay leni hoti hai?',
+      q: t('q_medicine_time')(med.name),
       correct: med.time,
-      distractors: ['08:00','13:00','18:00','21:00'].filter(t=>t!==med.time)
+      distractors: ['08:00','13:00','18:00','21:00'].filter(tm=>tm!==med.time)
     });
   }
   if(db.familyMembers.length>0){
     const fam = db.familyMembers[Math.floor(Math.random()*db.familyMembers.length)];
     pool.push({
-      q: fam.relation+' ka naam kya hai?',
+      q: t('q_family_name')(fam.relation),
       correct: fam.name,
       distractors: db.familyMembers.filter(f=>f.name!==fam.name).map(f=>f.name)
     });

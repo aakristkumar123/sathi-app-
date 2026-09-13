@@ -36,28 +36,36 @@
   <div id="patientHomeScreen">
     <div class="patient-topbar">
       <div class="name" id="patientGreeting">Namaste 🙏</div>
-      <button class="exit-link" onclick="goLanding()">Exit</button>
+      <div>
+        <div class="lang-switcher" id="langSwitcher">
+          <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">English</button>
+          <button class="lang-btn" data-lang="hi" onclick="setLanguage('hi')">हिंदी</button>
+          <button class="lang-btn" data-lang="brx" onclick="setLanguage('brx')">बड़ो</button>
+        </div>
+        <div class="voice-note hidden" id="voiceNote"></div>
+      </div>
+      <button class="exit-link" id="txt_exit" onclick="goLanding()">Exit</button>
     </div>
     <div class="patient-home">
       <button class="big-tile reminder-dot" id="reminderTile" onclick="goLanding()">
         <span class="emoji">⏰</span>
         <div>
-          <div class="label">Reminders</div>
-          <div class="sub">Medicine, food & routine</div>
+          <div class="label" id="lbl_reminders">Reminders</div>
+          <div class="sub" id="sub_reminders">Medicine, food & routine</div>
         </div>
       </button>
       <button class="big-tile" onclick="startPhotoGame()">
         <span class="emoji">🖼️</span>
         <div>
-          <div class="label">Yaadon ka Khel</div>
-          <div class="sub">Photo memory game</div>
+          <div class="label" id="lbl_photogame">Yaadon ka Khel</div>
+          <div class="sub" id="sub_photogame">Photo memory game</div>
         </div>
       </button>
       <button class="big-tile" onclick="startRoutineGame()">
         <span class="emoji">❓</span>
         <div>
-          <div class="label">Roz ka Sawal</div>
-          <div class="sub">Daily routine questions</div>
+          <div class="label" id="lbl_routinegame">Roz ka Sawal</div>
+          <div class="sub" id="sub_routinegame">Daily routine questions</div>
         </div>
       </button>
     </div>
@@ -71,8 +79,8 @@
   <div class="icon">💊</div>
   <h1 id="reminderTitle">Dawai lene ka samay</h1>
   <p id="reminderText"></p>
-  <button class="done-btn" id="reminderListenBtn" style="margin-bottom:16px;" onclick="replayReminder()">🔊 Suno</button>
-  <button class="done-btn" onclick="dismissReminder()">Ho gaya ✓</button>
+  <button class="done-btn" id="reminderListenBtn" style="margin-bottom:16px;" onclick="replayReminder()"></button>
+  <button class="done-btn" id="reminderDoneBtn" onclick="dismissReminder()"></button>
 </div>
 
 <!-- ===================== CARETAKER VIEW ===================== -->

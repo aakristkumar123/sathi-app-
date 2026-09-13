@@ -93,6 +93,25 @@ required to run it), **GitHub Pages** is the easiest and free way to host it:
 > platform like **Render** or **PythonAnywhere** instead — ask if you want
 > step-by-step instructions for that.
 
+## ⚠️ Before your demo: verify the Bodo translations
+
+The app now supports three languages on the patient dashboard — **English**,
+**Hindi**, and **Bodo** (a Tibeto-Burman language widely spoken in Assam).
+
+The Bodo text lives in `js/script.js` inside the `TRANSLATIONS.brx` object.
+Lines marked `// [VERIFY]` are best-effort placeholders — **not confirmed by
+a native speaker** — while `khulumbai` (the greeting) is a confirmed, correct
+word. Please get someone who speaks Bodo (a teammate, family member, or
+faculty advisor) to check and correct the `[VERIFY]` lines before presenting
+to the jury. Showing an incorrect translation on stage would undercut the
+feature more than simply not having it.
+
+Also note: most phones and browsers do not currently ship a Bodo text-to-
+speech voice. The app detects this and shows a small honest note on screen
+("voice not available on this device, showing text only") instead of
+pretending to speak it — this is a real, explainable platform limitation
+worth mentioning proactively if a jury member asks.
+
 ## Known limitations (good to mention proactively to the jury)
 
 - Data is stored per-browser (`localStorage`), not synced across devices —

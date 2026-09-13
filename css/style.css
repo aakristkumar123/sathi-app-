@@ -93,6 +93,31 @@
   .exit-link{
     background:none;color:var(--gold-light);font-size:0.95rem;text-decoration:underline;
   }
+  .lang-switcher{
+    display:flex;
+    gap:8px;
+  }
+  .lang-btn{
+    background:rgba(255,255,255,0.12);
+    color:var(--cream);
+    padding:8px 16px;
+    border-radius:100px;
+    font-size:0.9rem;
+    font-weight:600;
+    border:2px solid transparent;
+  }
+  .lang-btn.active{
+    background:var(--gold);
+    color:var(--forest-dark);
+    border-color:var(--gold-light);
+  }
+  .voice-note{
+    font-size:0.78rem;
+    color:var(--gold-light);
+    margin-top:6px;
+    max-width:220px;
+    text-align:right;
+  }
   .patient-home{
     flex:1;
     display:flex;
@@ -383,4 +408,6 @@
     .sidebar .exit-link{margin-top:0;}
     .content{padding:24px 18px;}
     .options-grid{grid-template-columns:1fr;}
+    .patient-topbar{flex-wrap:wrap; gap:10px;}
+    .lang-btn{padding:7px 12px; font-size:0.82rem;}
   }
